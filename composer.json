@@ -1,0 +1,32 @@
+{
+    "name": "yubin/cdemo",
+    "description": "cdemo package",
+    "homepage": "https://github.com/yubin-code/cDemo",
+    "license": "Apache-2.0",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "yubin",
+            "email": "184622329@qq.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/yubin-code/cDemo/issues"
+    },
+    "require": {
+        "php": ">=7.1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "think\\": "src/"
+        },
+        "files": [
+            "src/common.php"
+        ]
+    },
+    "extra": {
+        "think-config": {
+            "addons": "src/config.php"
+        }
+    }
+}
