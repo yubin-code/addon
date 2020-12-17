@@ -126,11 +126,10 @@ abstract class Addons
      */
     final public function getInfo()
     {
-        $info = Config::get($this->addon_info, []);
+        $info = Config::get($this->addon_info ?? "-", []);
         if ($info) {
             return $info;
         }
-
         // 文件属性
         $info = $this->info ?? [];
         // 文件配置

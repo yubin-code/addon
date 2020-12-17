@@ -30,7 +30,7 @@ class Service extends \think\Service
         $this->addons_path = $this->getAddonsPath();
         // 加载系统语言包
         Lang::load([
-            $this->app->getRootPath() . '/vendor/zzstudio/think-addons/src/lang/zh-cn.php'
+            $this->app->getRootPath() . '/vendor/yubin/cDemo/src/lang/zh-cn.php'
         ]);
         // 自动载入插件
         $this->autoload();
@@ -215,7 +215,6 @@ class Service extends \think\Service
         if (!is_dir($addons_path)) {
             @mkdir($addons_path, 0755, true);
         }
-
         return $addons_path;
     }
 

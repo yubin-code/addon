@@ -37,8 +37,8 @@ class Route
         // 设置当前请求的控制器、操作
         $request->setController($controller)->setAction($action);
 
-        // 获取插件基础信息
         $info = get_addons_info($addon);
+        // 获取插件基础信息
         if (!$info) {
             throw new HttpException(404, lang('addon %s not found', [$addon]));
         }
