@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 use think\facade\Event;
 use think\facade\Route;
+use think\facade\Config;
 use think\helper\{
     Str, Arr
 };
@@ -64,6 +65,204 @@ if (!function_exists('hook')) {
     }
 }
 
+if (! function_exists('parseName')) {
+    function parseName($name, $type = 0, $ucfirst = true)
+    {
+        if ($type) {
+            $name = preg_replace_callback('/_([a-zA-Z])/', function ($match) {
+                return strtoupper($match[1]);
+            }, $name);
+
+            return $ucfirst ? ucfirst($name) : lcfirst($name);
+        }
+
+        return strtolower(trim(preg_replace('/[A-Z]/', '_\\0', $name), '_'));
+    }
+}
+
+
+if (! function_exists('get_addon_list')) {
+    /**
+     * 获得插件列表
+     * @return array
+     */
+    function get_addon_list()
+    {
+        $results = scandir(addons_path());
+        $list = [];
+        foreach ($results as $name) {
+            if ($name === '.' or $name === '..') {
+                continue;
+            }
+            if (is_file(addons_path() . $name)) {
+                continue;
+            }
+            $addonDir = addons_path() . $name . DIRECTORY_SEPARATOR;
+            if (!is_dir($addonDir)) {
+                continue;
+            }
+
+            if (!is_file($addonDir . ucfirst($name) . '.php')) {
+                continue;
+            }
+
+            //这里不采用get_addons_info是因为会有缓存
+            //$info = get_addons_info($name);
+            $info_file = $addonDir . 'info.ini';
+            if (!is_file($info_file)) {
+                continue;
+            }
+
+            $info = parse_ini_file($info_file, true, INI_SCANNER_TYPED) ?: [];
+            if (!isset($info['name'])) {
+                continue;
+            }
+            $info['url'] = addons_url($name);
+            $list[$name] = $info;
+        }
+        return $list;
+    }
+}
+
+if (! function_exists('get_addons_class')) {
+    /**
+     * 获取插件类的类名.
+     *
+     * @param  string  $name  插件名
+     * @param  string  $type  返回命名空间类型
+     * @param  string  $class  当前类名
+     *
+     * @return string
+     */
+    function get_addons_class($name, $type = 'hook', $class = null)
+    {
+        $name = parseName($name);
+
+        // 处理多级控制器情况
+        if (! is_null($class) && strpos($class, '.')) {
+            $class = explode('.', $class);
+
+            $class[count($class) - 1] = parseName(end($class), 1);
+            $class = implode('\\', $class);
+        } else {
+            $class = parseName(is_null($class) ? $name : $class, 1);
+        }
+
+        switch ($type) {
+            case 'controller':
+                $namespace = '\\addons\\'.$name.'\\controller\\'.$class;
+                break;
+            default:
+                $namespace = '\\addons\\'.$name.'\\'.$class;
+        }
+        
+        return class_exists($namespace) ? $namespace : '';
+    }
+}
+
+
+if (! function_exists('get_addon_instance')) {
+    /**
+     * 获取插件的单例.
+     *
+     * @param  string  $name  插件名
+     *
+     * @return mixed|null
+     */
+    function get_addon_instance($name)
+    {
+        static $_addons = [];
+        if (isset($_addons[$name])) {
+            return $_addons[$name];
+        }
+        $class = get_addons_class($name);
+        if (class_exists($class)) {
+            $_addons[$name] = new $class(app());
+
+            return $_addons[$name];
+        } else {
+            return;
+        }
+    }
+}
+
+
+if (! function_exists('set_addons_info')) {
+    /**
+     * 设置基础配置信息.
+     *
+     * @param  string  $name  插件名
+     * @param  array  $array  配置数据
+     *
+     * @throws Exception
+     * @return bool
+     */
+    function set_addons_info($name, $array)
+    {
+        $file = addons_path().$name.DIRECTORY_SEPARATOR.'info.ini';
+        $addon = get_addon_instance($name);
+        $array = $addon->setInfo($name, $array);
+        if (! isset($array['name']) || ! isset($array['title']) || ! isset($array['version'])) {
+            throw new Exception('插件配置写入失败');
+        }
+        $res = [];
+        foreach ($array as $key => $val) {
+            if (is_array($val)) {
+                $res[] = "[$key]";
+                foreach ($val as $skey => $sval) {
+                    $res[] = "$skey = ".(is_numeric($sval) ? $sval : $sval);
+                }
+            } else {
+                $res[] = "$key = ".(is_numeric($val) ? $val : $val);
+            }
+        }
+        if ($handle = fopen($file, 'w')) {
+            fwrite($handle, implode("\n", $res)."\n");
+            fclose($handle);
+            //清空当前配置缓存
+            Config::set([$name => null], 'addoninfo');
+        } else {
+            throw new Exception('文件没有写入权限');
+        }
+
+        return true;
+    }
+
+}
+
+
+if (!function_exists('addons_path')) {
+    /**
+     * 获取插件目录
+     * @param string $name 插件名
+     * @return array
+     */
+    function addons_path()
+    {
+        $dir = app()->getRootPath();
+        $namespace = 'addons';
+
+        return $dir.$namespace.DIRECTORY_SEPARATOR;
+    }
+}
+
+/**
+ * 获取插件类的配置值值
+ *
+ * @param  string  $name  插件名
+ *
+ * @return array
+ */
+function get_addons_config($name)
+{
+    $addon = get_addon_instance($name);
+    if (! $addon) {
+        return [];
+    }
+
+    return $addon->getConfig($name);
+}
+
 if (!function_exists('get_addons_info')) {
     /**
      * 读取插件的基础信息
@@ -89,6 +288,7 @@ if (!function_exists('get_addons_instance')) {
      */
     function get_addons_instance($name)
     {
+
         static $_addons = [];
         if (isset($_addons[$name])) {
             return $_addons[$name];
@@ -103,37 +303,6 @@ if (!function_exists('get_addons_instance')) {
     }
 }
 
-if (!function_exists('get_addons_class')) {
-    /**
-     * 获取插件类的类名
-     * @param string $name 插件名
-     * @param string $type 返回命名空间类型
-     * @param string $class 当前类名
-     * @return string
-     */
-    function get_addons_class($name, $type = 'hook', $class = null)
-    {
-        $name = trim($name);
-        // 处理多级控制器情况
-        if (!is_null($class) && strpos($class, '.')) {
-            $class = explode('.', $class);
-
-            $class[count($class) - 1] = Str::studly(end($class));
-            $class = implode('\\', $class);
-        } else {
-            $class = Str::studly(is_null($class) ? $name : $class);
-        }
-        switch ($type) {
-            case 'controller':
-                $namespace = '\\addons\\' . $name . '\\controller\\' . $class;
-                break;
-            default:
-                $namespace = '\\addons\\' . $name . '\\Plugin';
-        }
-
-        return class_exists($namespace) ? $namespace : '';
-    }
-}
 
 if (!function_exists('addons_url')) {
     /**
@@ -177,4 +346,33 @@ if (!function_exists('addons_url')) {
 
         return Route::buildUrl("@addons/{$addons}/{$controller}/{$action}", $param)->suffix($suffix)->domain($domain);
     }
+}
+
+/**
+ * 删除文件夹.
+ *
+ * @param  string  $dirname  目录
+ * @param  bool  $withself  是否删除自身
+ *
+ * @return bool
+ */
+function rmdirs($dirname, $withself = true)
+{
+    if (! is_dir($dirname)) {
+        return false;
+    }
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dirname, RecursiveDirectoryIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+
+    foreach ($files as $fileinfo) {
+        $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
+        $todo($fileinfo->getRealPath());
+    }
+    if ($withself) {
+        @rmdir($dirname);
+    }
+
+    return true;
 }

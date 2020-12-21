@@ -23,13 +23,20 @@ abstract class Addons
     protected $name;
     // 插件路径
     protected $addon_path;
-    // 视图模型
-    protected $view;
+    
     // 插件配置
     protected $addon_config;
     // 插件信息
     protected $addon_info;
-
+    
+    // 当前错误信息
+    protected $error;
+    // 插件目录
+    public $addons_path = '';
+    // 插件配置作用域
+    protected $configRange = 'addonconfig';
+    // 插件信息作用域
+    protected $infoRange = 'addoninfo';
     /**
      * 插件构造函数
      * Addons constructor.
@@ -43,18 +50,19 @@ abstract class Addons
         $this->addon_path = $app->addons->getAddonsPath() . $this->name . DIRECTORY_SEPARATOR;
         $this->addon_config = "addon_{$this->name}_config";
         $this->addon_info = "addon_{$this->name}_info";
-        $this->view = clone View::engine('Think');
-        $this->view->config([
-            'view_path' => $this->addon_path . 'view' . DIRECTORY_SEPARATOR
+        
+        // 模版引擎配置修改
+        View::config([
+            'view_path' => $this->addon_path . 'view' . DIRECTORY_SEPARATOR,
+            'tpl_replace_string' => [
+                '__ADDON__' => "/addons/".$this->name
+            ]
         ]);
-
-        // 控制器初始化
         $this->initialize();
     }
 
     // 初始化
-    protected function initialize()
-    {}
+    protected function initialize(){}
 
     /**
      * 获取插件标识
@@ -70,56 +78,40 @@ abstract class Addons
     }
 
     /**
-     * 加载模板输出
-     * @param string $template
-     * @param array $vars           模板文件名
-     * @return false|mixed|string   模板输出变量
-     * @throws \think\Exception
+     * 检查基础配置信息是否完整
+     * @return bool
      */
-    protected function fetch($template = '', $vars = [])
+    final public function checkInfo()
     {
-        return $this->view->fetch($template, $vars);
+        $info = $this->getInfo();
+        $info_check_keys = ['name', 'title', 'intro', 'author', 'version', 'state'];
+        foreach ($info_check_keys as $value) {
+            if (!array_key_exists($value, $info)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
-     * 渲染内容输出
-     * @access protected
-     * @param  string $content 模板内容
-     * @param  array  $vars    模板输出变量
-     * @return mixed
+     * 设置插件信息数据.
+     *
+     * @param $name
+     * @param array $value
+     *
+     * @return array
      */
-    protected function display($content = '', $vars = [])
+    final public function setInfo($name = '', $value = [])
     {
-        return $this->view->display($content, $vars);
+        if (empty($name)) {
+            $name = $this->getName();
+        }
+        $info = $this->getInfo($name);
+        $info = array_merge($info, $value);
+        Config::set([$name => $info], $this->infoRange);
+
+        return $info;
     }
-
-    /**
-     * 模板变量赋值
-     * @access protected
-     * @param  mixed $name  要显示的模板变量
-     * @param  mixed $value 变量的值
-     * @return $this
-     */
-    protected function assign($name, $value = '')
-    {
-        $this->view->assign([$name => $value]);
-
-        return $this;
-    }
-
-    /**
-     * 初始化模板引擎
-     * @access protected
-     * @param  array|string $engine 引擎参数
-     * @return $this
-     */
-    protected function engine($engine)
-    {
-        $this->view->engine($engine);
-
-        return $this;
-    }
-
     /**
      * 插件基础信息
      * @return array
@@ -139,8 +131,8 @@ abstract class Addons
             $_info['url'] = addons_url();
             $info = array_merge($_info, $info);
         }
-        Config::set($info, $this->addon_info);
 
+        Config::set($info, $this->addon_info);
         return isset($info) ? $info : [];
     }
 
@@ -161,6 +153,7 @@ abstract class Addons
             if ($type) {
                 return $temp_arr;
             }
+
             foreach ($temp_arr as $key => $value) {
                 $config[$key] = $value['value'];
             }
