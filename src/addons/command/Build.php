@@ -14,12 +14,12 @@ use think\console\input\Option;
 use think\console\Output;
 use think\facade\Env;
 
-class SendConfig extends Command
+class Create extends Command
 {
 
     public function configure()
     {
-        $this->setName('addons:c')
+        $this->setName('addons:create')
              ->setDescription('send config to config folder');
     }
 

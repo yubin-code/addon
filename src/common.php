@@ -15,7 +15,9 @@ use think\helper\{
 
 \think\Console::starting(function (\think\Console $console) {
     $console->addCommands([
-        'addons:config' => '\\think\\addons\\command\\SendConfig'
+        'addons:config' => '\\think\\addons\\command\\SendConfig',  // 生成配置文件
+        'addons:create' => '\\think\\addons\\command\\Create',      // 创建插件项目
+        'addons:build' => '\\think\\addons\\command\\Build',        // 打包插件项目
     ]);
 });
 
