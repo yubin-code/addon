@@ -18,6 +18,7 @@ use think\helper\{
         'addons:config' => '\\think\\addons\\command\\SendConfig',  // 生成配置文件
         'addons:create' => '\\think\\addons\\command\\Create',      // 创建插件项目
         'addons:build' => '\\think\\addons\\command\\Build',        // 打包插件项目
+        'addons:remove' => '\\think\\addons\\command\\Remove',      // 删除插件
     ]);
 });
 
@@ -38,7 +39,7 @@ spl_autoload_register(function ($class) {
         }
         $path .= str_replace('_', '/', $class) . '.php';
         $dir .= $namespace . $path;
-
+        
         if (file_exists($dir)) {
             include $dir;
             return true;
@@ -345,36 +346,71 @@ if (!function_exists('addons_url')) {
                 $param = array_merge($query, $param);
             }
         }
-
         return Route::buildUrl("@addons/{$addons}/{$controller}/{$action}", $param)->suffix($suffix)->domain($domain);
     }
 }
 
+if (!function_exists('rmdirs')) {
+    /**
+     * 删除文件夹.
+     *
+     * @param  string  $dirname  目录
+     * @param  bool  $withself  是否删除自身
+     *
+     * @return bool
+     */
+    function rmdirs($dirname, $withself = true)
+    {
+        if (! is_dir($dirname)) {
+            return false;
+        }
+        $files = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dirname, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($files as $fileinfo) {
+            $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
+            $todo($fileinfo->getRealPath());
+        }
+        if ($withself) {
+            @rmdir($dirname);
+        }
+
+        return true;
+    }
+}
+
+if (!function_exists('liveExecuteCommand')) {
 /**
- * 删除文件夹.
- *
- * @param  string  $dirname  目录
- * @param  bool  $withself  是否删除自身
- *
- * @return bool
+ * Execute the given command by displaying console output live to the user.
+ *  @param  string  cmd          :  command to be executed
+ *  @return array   exit_status  :  exit status of the executed command
+ *                  output       :  console output of the executed command
  */
-function rmdirs($dirname, $withself = true)
-{
-    if (! is_dir($dirname)) {
-        return false;
+function liveExecuteCommand($cmd){
+    while (@ob_end_flush()); // end all output buffers if any
+    $proc = popen("$cmd 2>&1 ; echo Exit status : $?", 'r');
+    $live_output     = "";
+    $complete_output = "";
+    while (!feof($proc))
+    {
+      $live_output     = fread($proc, 4096);
+      $complete_output = $complete_output . $live_output;
+      echo "$live_output";
+      @ flush();
     }
-    $files = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($dirname, RecursiveDirectoryIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::CHILD_FIRST
+  
+    pclose($proc);
+  
+    // get exit status
+    preg_match('/[0-9]+$/', $complete_output, $matches);
+  
+    // return exit status and intended output
+    return array (
+      'exit_status'  => intval($matches[0]),
+      'output'       => str_replace("Exit status : " . $matches[0], '', $complete_output)
     );
+  }
 
-    foreach ($files as $fileinfo) {
-        $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
-        $todo($fileinfo->getRealPath());
-    }
-    if ($withself) {
-        @rmdir($dirname);
-    }
-
-    return true;
 }

@@ -22,7 +22,7 @@ class Route
      * @param null $action
      * @return mixed
      */
-    public static function execute($addon = null, $controller = null, $action = null)
+    public static function execute($addon = null, $controller = "index", $action = "index")
     {
         $app = app();
         $request = $app->request;
@@ -52,12 +52,7 @@ class Route
         if (!$class) {
             throw new HttpException(404, lang('addon controller %s not found', [Str::studly($controller)]));
         }
-
-        // 重写视图基础路径
-        $config = Config::get('view');
-        $config['view_path'] = $app->addons->getAddonsPath() . $addon . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR;
-        Config::set($config, 'view');
-
+        
         // 生成控制器对象
         $instance = new $class($app);
         $vars = [];
@@ -73,7 +68,7 @@ class Route
             throw new HttpException(404, lang('addon action %s not found', [get_class($instance).'->'.$action.'()']));
         }
         Event::trigger('addons_action_begin', $call);
-
+        
         return call_user_func_array($call, $vars);
     }
 }

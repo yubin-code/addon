@@ -15,7 +15,7 @@ use think\console\input\Option;
 use think\console\Output;
 use think\Exception;
 
-class Build extends Command
+class Remove extends Command
 {
 
     public function configure()
@@ -24,46 +24,32 @@ class Build extends Command
           ->addOption('name', 'a', Option::VALUE_REQUIRED, 'addon name', null)  // 插件名字
           ->setDescription('packaging plug-in');
     }
-
+    
     public function execute(Input $input, Output $output)
     {
+      $app = app();
       $name = $input->getOption('name') ?: '';
+      
       if (!$name) {
         throw new Exception('Addon name could not be empty');
       }
 
       // 生成项目名字
       $addonDir = addons_path().$name .DIRECTORY_SEPARATOR;
+      
       //判断插件是否存在
       if (!is_dir($addonDir)) {
-        throw new Exception("plug-ins don't exist!");
+        throw new Exception("${name} plug-ins don't exist!");
       }
 
-
-      $file = addons_path().$name. '.zip';
-
-      // 打包插件
-      if (!class_exists('ZipArchive')) {
-        throw new Exception('Make sure ZipArchive is installed correctly');
+      // 删除插件
+      try {
+        $app->addons->uninstall($name);
+      } catch (Exception $e) {
+        throw new Exception($e->getMessage());
       }
 
-      $zip = new ZipArchive();
-      $zip->open($file, ZipArchive::CREATE);
-      $files = new \RecursiveIteratorIterator(
-          new \RecursiveDirectoryIterator($addonDir, \RecursiveDirectoryIterator::SKIP_DOTS),
-          \RecursiveIteratorIterator::CHILD_FIRST
-      );
-      foreach ($files as $fileinfo) {
-          $filePath = $fileinfo->getPathName();
-          $localName = str_replace($addonDir, '', $filePath);
-          if ($fileinfo->isFile()) {
-              $zip->addFile($filePath, $localName);
-          } elseif ($fileinfo->isDir()) {
-              $zip->addEmptyDir($localName);
-          }
-      }
-      $zip->close();
-      $output->info("successed packaged [${name}] plug-in");
+      $output->info("The ${name} plug-in was removed successfully");
     }
 
 }

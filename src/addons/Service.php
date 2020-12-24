@@ -60,7 +60,7 @@ class Service extends \think\Service
             }
 
             // 注册控制器路由
-            $route->rule("addons/:addon/[:controller]/[:action]", $execute)->middleware(Addons::class);
+            $route->rule("/addons/:addon/[:controller]/[:action]", $execute)->middleware(Addons::class);
             // 自定义路由
             $routes = (array) Config::get('addons.route', []);
             foreach ($routes as $key => $val) {
@@ -697,12 +697,7 @@ class Service extends \think\Service
             throw new Exception('Addon not exists');
         }
 
-        // 移除插件基础资源目录
-        $destAssetsDir = self::getDestAssetsDir($name);
-        if (is_dir($destAssetsDir)) {
-            $cmd = 'rm -fr '.$destAssetsDir;
-            shell_exec($cmd);
-        }
+        self::removeAssetsDir($name);
         
         // 执行卸载脚本
         try {
@@ -740,15 +735,8 @@ class Service extends \think\Service
 
         $addonDir = addons_path().$name.DIRECTORY_SEPARATOR;
 
-        // 复制文件
-        $sourceAssetsDir = self::getSourceAssetsDir($name);     // 源文件资源
-        $destAssetsDir = self::getDestAssetsDir($name);         // 被复制到资源的文件
-
-        // 创建源文件与资源文件的软连接
-        if (is_dir($sourceAssetsDir)) {
-            $cmd = 'ln -s '.$sourceAssetsDir .' '.$destAssetsDir;
-            shell_exec($cmd);
-        }
+        // 建立资源链接
+        self::linkAssetsDir($name);
 
         //执行启用脚本
         try {
@@ -792,12 +780,7 @@ class Service extends \think\Service
         }
 
         // 移除插件基础资源目录
-        $destAssetsDir = self::getDestAssetsDir($name);
-
-        if (is_dir($destAssetsDir)) {
-            $cmd = 'rm -fr '.$destAssetsDir;
-            shell_exec($cmd);
-        }
+        self::removeAssetsDir($name);
         
         $info = get_addons_info($name);
         $info['state'] = 0;
@@ -907,6 +890,36 @@ class Service extends \think\Service
     }
 
     /**
+     * 删除资源文件
+     */
+    public static function removeAssetsDir($name)
+    {
+        // 移除插件基础资源目录
+        $destAssetsDir = self::getDestAssetsDir().$name;
+        if (is_dir($destAssetsDir)) {
+            $cmd = 'rm -fr '.$destAssetsDir;
+            shell_exec($cmd);
+        }
+    }
+    /**
+     * 建立资源目录链接
+     */
+    public static function linkAssetsDir($name)
+    {
+        // 复制文件
+        $sourceAssetsDir = self::getSourceAssetsDir($name);     // 源文件资源
+        $destAssetsDir = self::getDestAssetsDir().$name;        // 被复制到资源的文件
+
+        // 创建源文件与资源文件的软连接
+        if (is_dir($sourceAssetsDir)) {
+            $cmd = 'ln -s '.$sourceAssetsDir .' '.$destAssetsDir;
+            shell_exec($cmd);
+        }
+
+    }
+    
+
+    /**
      * 获取指定插件的目录
      */
     public static function getAddonDir($name)
@@ -920,9 +933,9 @@ class Service extends \think\Service
      *
      * @return string
      */
-    protected static function getDestAssetsDir($name)
+    public static function getDestAssetsDir()
     {
-        $assetsDir = app()->getRootPath().str_replace('/', DIRECTORY_SEPARATOR, "public/assets/addons/{$name}/");
+        $assetsDir = app()->getRootPath().str_replace('/', DIRECTORY_SEPARATOR, "public/assets/addons/");
         if (! is_dir($assetsDir)) {
             mkdir($assetsDir, 0755, true);
         }

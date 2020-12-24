@@ -50,13 +50,15 @@ abstract class Addons
         $this->addon_path = $app->addons->getAddonsPath() . $this->name . DIRECTORY_SEPARATOR;
         $this->addon_config = "addon_{$this->name}_config";
         $this->addon_info = "addon_{$this->name}_info";
+
+        // 设置模版变量
+        $tpl_replace_string = Config::get('view.tpl_replace_string');
+        $tpl_replace_string['__ADDON__'] = "/assets/addons/".$this->name;
         
         // 模版引擎配置修改
         View::config([
             'view_path' => $this->addon_path . 'view' . DIRECTORY_SEPARATOR,
-            'tpl_replace_string' => [
-                '__ADDON__' => "/addons/".$this->name
-            ]
+            'tpl_replace_string' => $tpl_replace_string
         ]);
         $this->initialize();
     }
@@ -164,6 +166,42 @@ abstract class Addons
         return $config;
     }
 
+    /**
+     * 获取 composer.json 中的信息
+     */
+    final public function getComposer(){
+        $composer = $this->app->getRootPath().'composer.json';
+        return json_decode(file_get_contents($composer), true);
+    }
+
+    // /**
+    //  * 判断是否安装了某个包
+    //  */
+    // final public function isPack($pack = ''){
+    //     $info = $this->getComposer();
+    //     $require = $info['require'];
+    //     return array_key_exists($pack,$require);
+    // }
+    // /**
+    //  * 安装包
+    //  */
+    // final public function installPack($pack = []){
+    //     foreach($pack as $key => $val){
+    //         $package = ""; 
+    //         // 判断是否没有版本要求
+    //         if(is_numeric($key)){
+    //             if($this->isPack($val)){
+    //                 continue;
+    //             }
+    //             $package = $val;
+    //         }
+
+    //         if($this->isPack($key)){
+    //             continue;
+    //         }
+    //         $package = "{$key}:{$val}";
+    //     }
+    // }
     //必须实现安装
     abstract public function install();
 

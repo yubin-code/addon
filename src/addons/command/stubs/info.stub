@@ -1,0 +1,7 @@
+name = {%name%}
+title = 插件名称{%name%}
+intro = {%name%}插件
+author = xxx
+website = https://www.xxx.com
+version = 1.0.0
+state = 1
