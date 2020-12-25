@@ -14,6 +14,7 @@ use think\console\input\Option;
 use think\console\Output;
 use think\facade\Env;
 
+// 创建插件文件
 class SendConfig extends Command
 {
 
@@ -26,7 +27,7 @@ class SendConfig extends Command
     public function execute(Input $input, Output $output)
     {
         //获取默认配置文件
-        $content = file_get_contents(root_path() . 'vendor/yubin/cdemo/src/config.php');
+        $content = file_get_contents(root_path() . 'vendor/yaoyue/addon/src/config.php');
 
         $configPath = config_path() . '/';
         $configFile = $configPath . 'addons.php';

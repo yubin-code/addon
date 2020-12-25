@@ -36,7 +36,7 @@ class Service extends \think\Service
         // 加载系统语言包
         Lang::load([
             // 记得修改
-            $this->app->getRootPath() . '/vendor/yubin/cDemo/src/lang/zh-cn.php'
+            $this->app->getRootPath() . '/vendor/yaoyue/addon/src/lang/zh-cn.php'
         ]);
         // 自动载入插件
         $this->autoload();

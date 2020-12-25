@@ -13,6 +13,8 @@ use think\console\input\Option;
 use think\console\Output;
 use think\Exception;
 
+
+// 创建插件
 class Create extends Command
 {
 
@@ -20,6 +22,7 @@ class Create extends Command
     {
         $this->setName('addons:create')
             ->addOption('name', 'a', Option::VALUE_REQUIRED, 'addon name', null)  // 插件名字
+            ->addOption('type', 't', Option::VALUE_REQUIRED, 'addon type', null)  // 插件类型
             ->setDescription('create a plug-in project');
     }
 
@@ -27,6 +30,7 @@ class Create extends Command
     {
       $app = app();
       $name = $input->getOption('name') ?: '';
+      $type = $input->getOption('type') ?: 'view';
       if (!$name) {
         throw new Exception('Addon name could not be empty');
       }
@@ -35,32 +39,46 @@ class Create extends Command
       $addonDir = addons_path().$name .DIRECTORY_SEPARATOR;
       //判断目录是否存在
       if (is_dir($addonDir)) {
-        throw new Exception("addon already exists!");
+        throw new Exception('addon already exists!');
       }
       
       mkdir($addonDir, 0755, true);
       mkdir($addonDir . 'controller', 0755, true);
       mkdir($addonDir . 'model', 0755, true);
-      mkdir($addonDir . 'view', 0755, true);
-      mkdir($addonDir . 'assets', 0755, true);
-      
-      $app->addons->linkAssetsDir($name);
 
+      // 默认controller
+      $controller = 'controller';
+      if($type === 'api'){
+        $controller = 'controllerApi';
+      }
+
+      // 默认创建带模版带插件
+      if($type === 'view'){
+        mkdir($addonDir . 'view', 0755, true);
+        mkdir($addonDir . 'assets', 0755, true);
+        // 把插件带资源文件链接到跟目录下public上
+        $app->addons->linkAssetsDir($name);
+      }
+      
       $data = [
         'name'               => $name,
         'addon'              => $name,
         'addonClassName'     => ucfirst($name),
       ];
       
-      $this->writeToFile("addon", $data, $addonDir . ucfirst($name) . '.php');
-      $this->writeToFile("config", $data, $addonDir . 'config.php');
-      $this->writeToFile("info", $data, $addonDir . 'info.ini');
-      $this->writeToFile("model", $data, $addonDir . 'model' . DIRECTORY_SEPARATOR . $data['addonClassName'].'.php');
-      $this->writeToFile("view", $data, $addonDir . 'view' . DIRECTORY_SEPARATOR . 'index/'.DIRECTORY_SEPARATOR.'index.html');
-      $this->writeToFile("controller", $data, $addonDir . 'controller' . DIRECTORY_SEPARATOR . 'Index.php');
-      $this->writeToFile("css", $data, $addonDir . 'assets' . DIRECTORY_SEPARATOR . 'style.css');
-      
-      $output->info("Create plug-in Successed!");
+      $this->writeToFile('addon', $data, $addonDir . ucfirst($name) . '.php');
+      $this->writeToFile('config', $data, $addonDir . 'config.php');
+      $this->writeToFile('info', $data, $addonDir . 'info.ini');
+      $this->writeToFile('model', $data, $addonDir . 'model' . DIRECTORY_SEPARATOR . $data['addonClassName'].'.php');
+      $this->writeToFile($controller, $data, $addonDir . 'controller' . DIRECTORY_SEPARATOR . 'Index.php');
+
+      // 默认创建带模版带插件
+      if($type === 'view'){
+        $this->writeToFile('view', $data, $addonDir . 'view' . DIRECTORY_SEPARATOR . 'index/'.DIRECTORY_SEPARATOR.'index.html');
+        $this->writeToFile('css', $data, $addonDir . 'assets' . DIRECTORY_SEPARATOR . 'style.css');
+      }
+
+      $output->info('Create plug-in Successed!');
     }
 
    

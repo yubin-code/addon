@@ -15,6 +15,7 @@ use think\console\input\Option;
 use think\console\Output;
 use think\Exception;
 
+// 打包插件
 class Build extends Command
 {
 

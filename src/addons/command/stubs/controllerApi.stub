@@ -1,0 +1,17 @@
+<?php
+
+namespace addons\{%addon%}\controller;
+
+class Index
+{
+
+    public function index()
+    {
+        return json([
+            'success'=> true,
+            'data'=> '{%addon%}插件创建成功',
+            'errorMessage' => ''
+        ]);
+    }
+
+}

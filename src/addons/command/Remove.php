@@ -15,12 +15,13 @@ use think\console\input\Option;
 use think\console\Output;
 use think\Exception;
 
+// 删除插件
 class Remove extends Command
 {
 
     public function configure()
     {
-        $this->setName('addons:build')
+        $this->setName('addons:remove')
           ->addOption('name', 'a', Option::VALUE_REQUIRED, 'addon name', null)  // 插件名字
           ->setDescription('packaging plug-in');
     }
