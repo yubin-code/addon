@@ -1,7 +1,7 @@
 {
-    "name": "yubin/cdemo",
-    "description": "cdemo package",
-    "homepage": "https://github.com/yubin-code/cDemo",
+    "name": "yaoyue/addon",
+    "description": "addon package",
+    "homepage": "https://github.com/yubin-code/addon",
     "license": "Apache-2.0",
     "version": "1.0.0",
     "authors": [
@@ -11,11 +11,10 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/yubin-code/cDemo/issues"
+        "issues": "https://github.com/yubin-code/addon/issues"
     },
     "require": {
-        "php": ">=7.1.0",
-        "topthink/think-view": "^1.0"
+        "php": ">=7.1.0"
     },
     "autoload": {
         "psr-4": {

@@ -11,7 +11,6 @@ namespace think;
 use think\App;
 use think\helper\Str;
 use think\facade\Config;
-use think\facade\View;
 
 abstract class Addons
 {
@@ -55,11 +54,16 @@ abstract class Addons
         $tpl_replace_string = Config::get('view.tpl_replace_string');
         $tpl_replace_string['__ADDON__'] = "/assets/addons/".$this->name;
         
-        // 模版引擎配置修改
-        View::config([
-            'view_path' => $this->addon_path . 'view' . DIRECTORY_SEPARATOR,
-            'tpl_replace_string' => $tpl_replace_string
-        ]);
+        // 判断下试图是否被安装如果没有安装就不修改模版配置
+        // 因为有一种情况是不需要模版配置
+        if(class_exists('\think\facade\View')){
+            // 模版引擎配置修改
+            \think\facade\View::config([
+                'view_path' => $this->addon_path . 'view' . DIRECTORY_SEPARATOR,
+                'tpl_replace_string' => $tpl_replace_string
+            ]);
+        }
+
         $this->initialize();
     }
 
