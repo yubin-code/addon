@@ -10,7 +10,6 @@ namespace think\addons;
 
 use think\helper\Str;
 use think\facade\Event;
-use think\facade\Config;
 use think\exception\HttpException;
 
 class Route

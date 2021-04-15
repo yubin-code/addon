@@ -559,8 +559,7 @@ class Service extends \think\Service
             // 追加MD5和Data数据
             $extend['md5'] = md5_file($tmpFile);
             $extend['data'] = $zip->getArchiveComment();
-            $extend['unknownsources'] = config('app_debug') && config('fastadmin.unknownsources');
-            $extend['faversion'] = config('fastadmin.version');
+            $extend['faversion'] = config('adminapi.version');
 
             $params = array_merge($config, $extend);
 
@@ -984,7 +983,7 @@ class Service extends \think\Service
      */
     protected static function getServerUrl()
     {
-        return config('app.serverUrl');
+        return config('adminapi.serverUrl');
     }
 
     /**
